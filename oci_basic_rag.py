@@ -50,9 +50,9 @@ data_en = loadPDFFile([document_path])
 
 # Step 2: Create vector store
 db = FAISS.from_documents(data_en, embeddings)
-db.save_local("vector_data/faiss_index_en_pdf")
+db.save_local("generative_AI_training_sessions/vector_data/faiss_index_en_pdf")
 # Step 3: Create retriever from vector store
-retriever = db.as_retriever(search_type="similarity", search_kwargs={"k":1})
+retriever = db.as_retriever(search_type="similarity", search_kwargs={"k":5})
 
 # Step 4: Create RAG chain
 system_prompt = """You are a bank assistant for customer question-answering tasks. 
@@ -60,7 +60,6 @@ system_prompt = """You are a bank assistant for customer question-answering task
                     If you don't know the answer, just say that you don't know.
                     Use three sentences maximum and keep the answer concise.
                     context:{context}
-                    question: {question}
 """ 
 # Step 5: Create chat prompt template
 chat_prompt = ChatPromptTemplate.from_messages([
@@ -91,7 +90,6 @@ while True:
     # Step 2: Prepare input for RAG chain
     chain_input = {
         "context": context,
-        "question": user_input,
         "messages": messages
     }
 
