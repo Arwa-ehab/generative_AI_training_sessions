@@ -36,13 +36,11 @@ def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 ######## Rag Steps ########
 
-
+# Load existing vector store
 vectorstore_en = FAISS.load_local("generative_AI_training_sessions/vector_data/faiss_index_en_pdf", embeddings, allow_dangerous_deserialization=True)
-
+# Create retriever from vector store
 retriever = vectorstore_en.as_retriever(search_type="similarity", search_kwargs={"k":5})
-
-# Step 4: Create RAG chain
-
+# Create standalone question prompt template
 history_prompt = ChatPromptTemplate.from_messages([
     (
         "system",
@@ -59,7 +57,7 @@ history_prompt = ChatPromptTemplate.from_messages([
 """)
     ])
 
-# Step 5: Create chat prompt template
+# Create chat prompt template
 chat_prompt = ChatPromptTemplate.from_messages([
         (
             "system",
@@ -72,7 +70,15 @@ chat_prompt = ChatPromptTemplate.from_messages([
        ),
        ("user", "{question}")
     ])
+######## Chat Composition First approach #########
+# Standalone question chain
+standalone_chain = history_prompt | llm | StrOutputParser()
+# Retriever chain
+retriever_chain= retriever | format_docs
+# Final response chain
+response_chain=chat_prompt | llm
 
+#########Chain Composition second approach #########
 # main_chain= history_prompt | llm | StrOutputParser() | RunnableParallel(
 #     {
 #         "question": RunnablePassthrough() ,
@@ -90,27 +96,25 @@ while True:
     # Add user message to memory
     messages.append(HumanMessage(content=user_input))
 
-    # Step 1: Retrieve relevant documents
-
-
-    # Step 2: Prepare input for RAG chain
+    # Prepare input for RAG chain
     chain_input = {
         "question": user_input,
         "messages": messages[:-1]
     }
-    standalone_chain = history_prompt | llm | StrOutputParser()
-    retriever_chain= retriever | format_docs
-  
-    response_chain=chat_prompt | llm
-    # Step 3: Invoke the chain
+    
+    # Step 1: Generate standalone question
     standalone_question = standalone_chain.invoke(chain_input)
     print("Standalone question:", standalone_question)
+    # Step 2: Retrieve relevant documents
     context = retriever_chain.invoke(standalone_question)
     chain_input = {
         "question": standalone_question,
         "context": context
     }
+    # Step 3: Invoke the chain
     assistant_text = response_chain.invoke(chain_input)
+
+    ##Another way just invoke the main chain
     # assistant_text = main_chain.invoke(chain_input)
     
 
