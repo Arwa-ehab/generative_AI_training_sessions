@@ -73,12 +73,12 @@ chat_prompt = ChatPromptTemplate.from_messages([
        ("user", "{question}")
     ])
 
-main_chain= history_prompt | llm | StrOutputParser() | RunnableParallel(
-    {
-        "question": RunnablePassthrough() ,
+# main_chain= history_prompt | llm | StrOutputParser() | RunnableParallel(
+#     {
+#         "question": RunnablePassthrough() ,
 
-        "context": retriever | format_docs,
-    })  | chat_prompt | llm
+#         "context": retriever | format_docs,
+#     })  | chat_prompt | llm
 messages = []
 ############# Chat loop #############
 while True:
@@ -98,19 +98,21 @@ while True:
         "question": user_input,
         "messages": messages[:-1]
     }
-    # standalone_chain = history_prompt | llm | StrOutputParser()
-    # retriever_chain= retriever | format_docs
+    standalone_chain = history_prompt | llm | StrOutputParser()
+    retriever_chain= retriever | format_docs
   
-    # response_chain=chat_prompt | llm
-    # # Step 3: Invoke the chain
-    # standalone_question = standalone_chain.invoke(chain_input)
-    # print("Standalone question:", standalone_question)
-    # context = retriever_chain.invoke(standalone_question)
-    # chain_input = {
-    #     "question": standalone_question,
-    #     "context": context
-    # }
-    assistant_text = main_chain.invoke(chain_input)
+    response_chain=chat_prompt | llm
+    # Step 3: Invoke the chain
+    standalone_question = standalone_chain.invoke(chain_input)
+    print("Standalone question:", standalone_question)
+    context = retriever_chain.invoke(standalone_question)
+    chain_input = {
+        "question": standalone_question,
+        "context": context
+    }
+    assistant_text = response_chain.invoke(chain_input)
+    # assistant_text = main_chain.invoke(chain_input)
+    
 
     # Step 4: Show assistant response
     print("Assistant:", assistant_text.content, "\n")
