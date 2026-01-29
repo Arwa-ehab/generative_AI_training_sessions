@@ -125,3 +125,8 @@ while True:
     assistant_msg = response["messages"][-1].content
     print("\nAI Response:", assistant_msg)
 
+    print("\n--- Chat History ---")
+    for item in response["messages"]:
+        print(item)
+        print("\n\n")
+
